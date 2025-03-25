@@ -1,20 +1,25 @@
-const path = require('path');
-
+const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 module.exports = {
-  mode: 'development',
+  mode: "development",
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [{ from: "./index.html", to: "./" }],
+    }),
+  ],
   entry: {
-    main: './index.js'
+    main: "./index.js",
   },
   output: {
-    path: path.resolve(__dirname, 'public'),
-    filename: 'script.js'
+    path: path.resolve(__dirname, "public"),
+    filename: "index.js",
   },
   devServer: {
     static: {
-      directory: path.join(__dirname, 'public'),
+      directory: path.join(__dirname, "public"),
     },
     compress: true,
-    port: 8080
+    port: 8080,
   },
   // module: {
   //   rules: [
@@ -30,5 +35,5 @@ module.exports = {
   //     }
   //   ],
   // },
-  devtool: 'inline-source-map'
+  devtool: "inline-source-map",
 };
