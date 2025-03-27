@@ -8,11 +8,11 @@ module.exports = {
     }),
   ],
   entry: {
-    main: "./index.js",
+    main: "./bootstrap.js",
   },
   output: {
     path: path.resolve(__dirname, "public"),
-    filename: "index.js",
+    filename: "bootstrap.js",
   },
   devServer: {
     static: {
