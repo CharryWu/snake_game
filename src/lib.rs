@@ -1,4 +1,9 @@
 use wasm_bindgen::prelude::*;
+use wee_alloc::WeeAlloc;
+
+// Use `wee_alloc` as the global allocator. Reduces compiled .wasm size by 3KB
+#[global_allocator]
+static ALLOC: WeeAlloc = WeeAlloc::INIT;
 
 #[wasm_bindgen] // import externally defined JS functions into current module
 extern "C" {
