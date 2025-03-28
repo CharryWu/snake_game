@@ -33,8 +33,14 @@ extern "C" {
     fn log_many(a: &str, b: &str);
 }
 
-#[wasm_bindgen] // exported to web assembly and invoked in JS context
-// It's the opposite of extern: these aren't the functions we need, but rather the functions we're giving out to the world.
-pub fn greet(name: &str) {
-    log(&format!("+++++++ WASM: Hi there {}", name));
+#[wasm_bindgen]
+pub struct World {
+    pub width: usize,
+}
+
+#[wasm_bindgen]
+impl World {
+    pub fn new() -> World {
+        World { width: 8 }
+    }
 }
