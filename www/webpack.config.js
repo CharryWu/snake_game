@@ -4,7 +4,11 @@ module.exports = {
   mode: "development",
   plugins: [
     new CopyWebpackPlugin({
-      patterns: [{ from: "./index.html", to: "./" }],
+      patterns: [
+        { from: "./index.html", to: "./" },
+        { from: "*.css", to: "./" },
+        { from: "*.js", to: "./" },
+      ],
     }),
   ],
   entry: {
