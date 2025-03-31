@@ -34,13 +34,43 @@ function drawWorld({ canvas, context, world }) {
   }
   context.stroke();
 }
+
+function drawSnake({ canvas, context, world }) {
+  const { x: snake_head_x, y: snake_head_y } = world.get_snake_head_coord();
+  context.beginPath();
+  context.fillRect(
+    CELL_SIZE * snake_head_x,
+    CELL_SIZE * snake_head_y,
+    CELL_SIZE,
+    CELL_SIZE
+  );
+  context.stroke();
+}
+
+function paint({ canvas, context, world }) {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  drawWorld({ canvas, context, world });
+  drawSnake({ canvas, context, world });
+}
+
 async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
   const canvas = document.getElementById("canvas");
   const world = World.new();
   const context = canvas.getContext("2d");
   // console.log(world.width); // will print `undefined` since `width` is a private field
-  drawWorld({ canvas, context, world });
+
+  function update() {
+    window.setTimeout(() => {
+      world.update();
+      paint({ canvas, context, world });
+      // method takes callback to invoked before next browser repaint
+      window.requestAnimationFrame(update);
+    }, 1000);
+  }
+
+  paint();
+  update();
 }
 
 init_main();
