@@ -5,6 +5,13 @@ const WORLD_COLS = 12; // # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
 
+/**
+ * Represents the parameters required for a drawing function.
+ *
+ * @property {HTMLCanvasElement} canvas - The canvas element where the drawing will be rendered.
+ * @property {CanvasRenderingContext2D} context - The 2D rendering context for the drawing operations.
+ * @property {World} world - The game world instance containing the state and logic for the drawing.
+ */
 interface DrawingFnParams {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
@@ -32,8 +39,6 @@ function drawWorld({ canvas, context, world }: DrawingFnParams) {
   context.scale(dpi, dpi);
   context.beginPath();
 
-  console.log({ worldRows, worldCols });
-
   // Draw horizontal lines
   for (let row = 0; row < worldRows + 1; row++) {
     // drawing (x, y) is transpose of (row, col)
@@ -48,6 +53,17 @@ function drawWorld({ canvas, context, world }: DrawingFnParams) {
   context.stroke();
 }
 
+/**
+ * Draws the snake's head on the canvas.
+ *
+ * This function uses the provided canvas and context to draw the snake's head
+ * at its current position in the world. The position is determined by the
+ * snake's head coordinates retrieved from the world object. The size of each
+ * cell is defined by the CELL_SIZE constant.
+ *
+ * @param {DrawingFnParams} params - The parameters required for drawing,
+ * including the canvas element, its rendering context, and the world object.
+ */
 function drawSnake({ canvas, context, world }: DrawingFnParams) {
   const { row: snake_head_row, col: snake_head_col } =
     world.get_snake_head_coord();
@@ -61,12 +77,29 @@ function drawSnake({ canvas, context, world }: DrawingFnParams) {
   context.stroke();
 }
 
+/**
+ * Paints the current state of the world and the snake onto the canvas.
+ *
+ * This function first clears the entire canvas, then draws the grid
+ * representing the world and finally draws the snake on top of it.
+ *
+ * @param {DrawingFnParams} params - The parameters containing the canvas,
+ * context, and world to be drawn.
+ */
 function paint({ canvas, context, world }: DrawingFnParams) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawWorld({ canvas, context, world });
   drawSnake({ canvas, context, world });
 }
 
+/**
+ * Initializes the main application by setting up the WebAssembly module,
+ * creating the game world, and starting the game loop. The function retrieves
+ * the canvas element, initializes the game world with specified dimensions
+ * and snake starting position, and sets up the 2D rendering context. It
+ * begins the game loop with a specified frames per second (FPS) rate, updating
+ * the game state and rendering the world and snake on each frame.
+ */
 async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
