@@ -1,9 +1,9 @@
 import init, { World } from "snake_game";
 const CELL_SIZE = 10;
-const WORLD_WIDTH = 16;
-const WORLD_HEIGHT = 20;
-const SNAKE_SPAWN_X = 2;
-const SNAKE_SPAWN_Y = 2;
+const WORLD_ROWS = 24; // # of rows
+const WORLD_COLS = 12; // # of columns
+const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
+const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
 
 interface DrawingFnParams {
   canvas: HTMLCanvasElement;
@@ -23,34 +23,38 @@ interface DrawingFnParams {
  */
 function drawWorld({ canvas, context, world }: DrawingFnParams) {
   const dpi = window.devicePixelRatio;
-  const worldWidth = world.get_width();
-  const worldHeight = world.get_height();
-  canvas.width = worldWidth * CELL_SIZE * dpi;
-  canvas.height = worldHeight * CELL_SIZE * dpi;
-  canvas.style.width = `${worldWidth * CELL_SIZE}px`;
-  canvas.style.height = `${worldHeight * CELL_SIZE}px`;
+  const worldRows = world.get_num_rows();
+  const worldCols = world.get_num_cols();
+  canvas.width = worldCols * CELL_SIZE * dpi;
+  canvas.height = worldRows * CELL_SIZE * dpi;
+  canvas.style.width = `${worldCols * CELL_SIZE}px`;
+  canvas.style.height = `${worldRows * CELL_SIZE}px`;
   context.scale(dpi, dpi);
   context.beginPath();
 
+  console.log({ worldRows, worldCols });
+
   // Draw horizontal lines
-  for (let x = 0; x < worldWidth + 1; x++) {
-    context.moveTo(CELL_SIZE * x, 0); //y=0 at left edge
-    context.lineTo(CELL_SIZE * x, worldWidth * CELL_SIZE); // y=worldWidth * CELL_SIZE at right edge
+  for (let row = 0; row < worldRows + 1; row++) {
+    // drawing (x, y) is transpose of (row, col)
+    context.moveTo(0, row * CELL_SIZE); //x=0 at left edge
+    context.lineTo(CELL_SIZE * worldCols, row * CELL_SIZE); // y=worldWidth * CELL_SIZE at right edge
   }
   // Draw vertical lines
-  for (let y = 0; y < worldWidth + 1; y++) {
-    context.moveTo(0, CELL_SIZE * y); //x=0 at top edge
-    context.lineTo(CELL_SIZE * worldHeight, CELL_SIZE * y); // x=worldHeight * CELL_SIZE at bottom edge
+  for (let col = 0; col < worldCols + 1; col++) {
+    context.moveTo(col * CELL_SIZE, 0); //y=0 at top edge
+    context.lineTo(col * CELL_SIZE, CELL_SIZE * worldRows); // x=worldHeight * CELL_SIZE at bottom edge
   }
   context.stroke();
 }
 
 function drawSnake({ canvas, context, world }: DrawingFnParams) {
-  const { x: snake_head_x, y: snake_head_y } = world.get_snake_head_coord();
+  const { row: snake_head_row, col: snake_head_col } =
+    world.get_snake_head_coord();
   context.beginPath();
   context.fillRect(
-    CELL_SIZE * snake_head_x,
-    CELL_SIZE * snake_head_y,
+    CELL_SIZE * snake_head_col,
+    CELL_SIZE * snake_head_row,
     CELL_SIZE,
     CELL_SIZE
   );
@@ -67,21 +71,22 @@ async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
   const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   const world = World.from(
-    WORLD_WIDTH,
-    WORLD_HEIGHT,
-    SNAKE_SPAWN_X,
-    SNAKE_SPAWN_Y
+    WORLD_ROWS,
+    WORLD_COLS,
+    SNAKE_SPAWN_ROW,
+    SNAKE_SPAWN_COL
   );
   const context = canvas.getContext("2d");
   // console.log(world.width); // will print `undefined` since `width` is a private field
 
   function update() {
+    const FPS = 4;
     window.setTimeout(() => {
       world.update();
       paint({ canvas, context, world });
       // method takes callback to invoked before next browser repaint
       window.requestAnimationFrame(update);
-    }, 1000);
+    }, 1000 / FPS);
   }
 
   paint({ canvas, world, context });

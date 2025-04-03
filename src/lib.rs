@@ -37,8 +37,8 @@ extern "C" {
 // See https://doc.rust-lang.org/std/marker/trait.Copy.html#whats-the-difference-between-copy-and-clone
 #[derive(Copy, Clone, Debug, PartialEq, Eq)] // A type can implement Copy if all of its components implement Copy.
 pub struct Coordinate {
-    pub x: usize,
-    pub y: usize,
+    pub row: usize,
+    pub col: usize,
 }
 
 // usize/类型isize用于处理与内存访问相关的操作（数组索引、指针运算、指针类型双关、ffi 互操作等）。
@@ -49,11 +49,11 @@ pub struct Snake {
 }
 
 impl Snake {
-    fn new(spawn_x: usize, spawn_y: usize) -> Snake {
+    fn new(spawn_row: usize, spawn_col: usize) -> Snake {
         Snake {
             body: vec![Coordinate {
-                x: spawn_x,
-                y: spawn_y,
+                row: spawn_row,
+                col: spawn_col,
             }],
         }
     }
@@ -61,8 +61,8 @@ impl Snake {
 
 #[wasm_bindgen]
 pub struct World {
-    width: usize,
-    height: usize,
+    num_rows: usize,
+    num_cols: usize,
     snake: Snake,
 }
 
@@ -70,26 +70,31 @@ pub struct World {
 impl World {
     pub fn new() -> World {
         World {
-            width: 8,
-            height: 8,
+            num_rows: 8,
+            num_cols: 8,
             snake: Snake::new(1, 2),
         }
     }
 
-    pub fn from(world_width: usize, world_height: usize, snake_x: usize, snake_y: usize) -> World {
+    pub fn from(
+        world_num_rows: usize,
+        world_num_cols: usize,
+        snake_row: usize,
+        snake_col: usize,
+    ) -> World {
         World {
-            width: world_width,
-            height: world_height,
-            snake: Snake::new(snake_x, snake_y),
+            num_rows: world_num_rows,
+            num_cols: world_num_cols,
+            snake: Snake::new(snake_row, snake_col),
         }
     }
 
-    pub fn get_width(&self) -> usize {
-        self.width
+    pub fn get_num_rows(&self) -> usize {
+        self.num_rows
     }
 
-    pub fn get_height(&self) -> usize {
-        self.height
+    pub fn get_num_cols(&self) -> usize {
+        self.num_cols
     }
 
     pub fn get_snake_head_coord(&self) -> Coordinate {
@@ -97,7 +102,7 @@ impl World {
     }
 
     pub fn update(&mut self) {
-        let Coordinate { x, y } = self.get_snake_head_coord();
-        self.snake.body[0].x = (x + 1) % self.get_width();
+        let Coordinate { row, col } = self.get_snake_head_coord();
+        self.snake.body[0].col = (col + 1) % self.get_num_cols();
     }
 }
