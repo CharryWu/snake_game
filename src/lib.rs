@@ -75,9 +75,19 @@ impl World {
             snake: Snake::new(1, 2),
         }
     }
+
+    pub fn from(world_width: usize, world_height: usize, snake_x: usize, snake_y: usize) -> World {
+        World {
+            width: world_width,
+            height: world_height,
+            snake: Snake::new(snake_x, snake_y),
+        }
+    }
+
     pub fn get_width(&self) -> usize {
         self.width
     }
+
     pub fn get_height(&self) -> usize {
         self.height
     }

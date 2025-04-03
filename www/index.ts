@@ -1,5 +1,15 @@
 import init, { World } from "snake_game";
 const CELL_SIZE = 10;
+const WORLD_WIDTH = 16;
+const WORLD_HEIGHT = 20;
+const SNAKE_SPAWN_X = 2;
+const SNAKE_SPAWN_Y = 2;
+
+interface DrawingFnParams {
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  world: World;
+}
 /**
  * Draws the game world on a canvas element by setting its dimensions
  * based on the world's width and height, and drawing grid lines.
@@ -11,7 +21,7 @@ const CELL_SIZE = 10;
  * @param {CanvasRenderingContext2D} params.context - The 2D rendering context for the drawing surface of the canvas.
  * @param {World} params.world - The game world instance providing dimensions.
  */
-function drawWorld({ canvas, context, world }) {
+function drawWorld({ canvas, context, world }: DrawingFnParams) {
   const dpi = window.devicePixelRatio;
   const worldWidth = world.get_width();
   const worldHeight = world.get_height();
@@ -35,7 +45,7 @@ function drawWorld({ canvas, context, world }) {
   context.stroke();
 }
 
-function drawSnake({ canvas, context, world }) {
+function drawSnake({ canvas, context, world }: DrawingFnParams) {
   const { x: snake_head_x, y: snake_head_y } = world.get_snake_head_coord();
   context.beginPath();
   context.fillRect(
@@ -47,7 +57,7 @@ function drawSnake({ canvas, context, world }) {
   context.stroke();
 }
 
-function paint({ canvas, context, world }) {
+function paint({ canvas, context, world }: DrawingFnParams) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawWorld({ canvas, context, world });
   drawSnake({ canvas, context, world });
@@ -55,8 +65,13 @@ function paint({ canvas, context, world }) {
 
 async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
-  const canvas = document.getElementById("canvas");
-  const world = World.new();
+  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+  const world = World.from(
+    WORLD_WIDTH,
+    WORLD_HEIGHT,
+    SNAKE_SPAWN_X,
+    SNAKE_SPAWN_Y
+  );
   const context = canvas.getContext("2d");
   // console.log(world.width); // will print `undefined` since `width` is a private field
 
@@ -69,7 +84,7 @@ async function init_main() {
     }, 1000);
   }
 
-  paint();
+  paint({ canvas, world, context });
   update();
 }
 
