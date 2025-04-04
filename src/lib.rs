@@ -41,11 +41,26 @@ pub struct Coordinate {
     pub col: usize,
 }
 
+#[derive(PartialEq, Eq)]
+/**
+ * PartialEq equality must be (for all a, b and c):
+ * - symmetric: a == b implies b == a; and
+ * - transitive: a == b and b == c implies a == c.
+ * **Trait Eq inherits trait PartialEq. All it does is refine the contract. a == a : valild assuming type A implements Eq**
+ */
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 // usize/类型isize用于处理与内存访问相关的操作（数组索引、指针运算、指针类型双关、ffi 互操作等）。
 // 如果你像数字u32一样使用usize，那么你可能误用了它。
 // 例如，你可能会尝试在usize上执行算术运算，这是不可能的，因为usize不是数字，而是一个类型。
 pub struct Snake {
     body: Vec<Coordinate>,
+    direction: Direction,
 }
 
 impl Snake {
@@ -55,6 +70,7 @@ impl Snake {
                 row: spawn_row,
                 col: spawn_col,
             }],
+            direction: Direction::Right,
         }
     }
 }
@@ -103,6 +119,17 @@ impl World {
 
     pub fn update(&mut self) {
         let Coordinate { row, col } = self.get_snake_head_coord();
-        self.snake.body[0].col = (col + 1) % self.get_num_cols();
+        self.snake.body[0].row = match self.snake.direction {
+            Direction::Up => (row - 1 + self.get_num_rows()) % self.get_num_rows(),
+            Direction::Down => (row + 1 + self.get_num_rows()) % self.get_num_rows(),
+            Direction::Left => row,
+            Direction::Right => row,
+        };
+        self.snake.body[0].col = match self.snake.direction {
+            Direction::Up => col,
+            Direction::Down => col,
+            Direction::Left => (col - 1 + self.get_num_cols()) % self.get_num_cols(),
+            Direction::Right => (col + 1 + self.get_num_cols()) % self.get_num_cols(),
+        };
     }
 }
