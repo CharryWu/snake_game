@@ -41,6 +41,7 @@ pub struct Coordinate {
     pub col: usize,
 }
 
+#[wasm_bindgen]
 #[derive(PartialEq, Eq)]
 /**
  * PartialEq equality must be (for all a, b and c):
@@ -48,7 +49,7 @@ pub struct Coordinate {
  * - transitive: a == b and b == c implies a == c.
  * **Trait Eq inherits trait PartialEq. All it does is refine the contract. a == a : valild assuming type A implements Eq**
  */
-enum Direction {
+pub enum Direction {
     Up,
     Down,
     Left,
@@ -117,19 +118,23 @@ impl World {
         self.snake.body[0]
     }
 
+    pub fn change_snake_dir(&mut self, direction: Direction) {
+        self.snake.direction = direction;
+    }
+
     pub fn update(&mut self) {
         let Coordinate { row, col } = self.get_snake_head_coord();
         self.snake.body[0].row = match self.snake.direction {
-            Direction::Up => (row - 1 + self.get_num_rows()) % self.get_num_rows(),
-            Direction::Down => (row + 1 + self.get_num_rows()) % self.get_num_rows(),
+            Direction::Up => (row - 1 + self.num_rows) % self.num_rows, // prevent overflow
+            Direction::Down => (row + 1) % self.num_rows,
             Direction::Left => row,
             Direction::Right => row,
         };
         self.snake.body[0].col = match self.snake.direction {
             Direction::Up => col,
             Direction::Down => col,
-            Direction::Left => (col - 1 + self.get_num_cols()) % self.get_num_cols(),
-            Direction::Right => (col + 1 + self.get_num_cols()) % self.get_num_cols(),
+            Direction::Left => (col - 1 + self.num_cols) % self.num_cols, // prevent overflow
+            Direction::Right => (col + 1) % self.num_cols,
         };
     }
 }

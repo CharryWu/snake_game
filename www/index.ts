@@ -1,4 +1,4 @@
-import init, { World } from "snake_game";
+import init, { Direction, World } from "snake_game";
 const CELL_SIZE = 10;
 const WORLD_ROWS = 24; // # of rows
 const WORLD_COLS = 12; // # of columns
@@ -110,7 +110,25 @@ async function init_main() {
     SNAKE_SPAWN_COL
   );
   const context = canvas.getContext("2d");
-  // console.log(world.width); // will print `undefined` since `width` is a private field
+  // console.log(world.num_rows); // will print `undefined` since `num_rows` is a private field
+
+  document.addEventListener("keydown", (e) => {
+    console.log(e.code);
+    switch (e.code) {
+      case "ArrowLeft":
+        world.change_snake_dir(Direction.Left);
+        break;
+      case "ArrowRight":
+        world.change_snake_dir(Direction.Right);
+        break;
+      case "ArrowUp":
+        world.change_snake_dir(Direction.Up);
+        break;
+      case "ArrowDown":
+        world.change_snake_dir(Direction.Down);
+        break;
+    }
+  });
 
   function update() {
     const FPS = 4;
