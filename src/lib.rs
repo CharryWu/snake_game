@@ -41,6 +41,8 @@ pub struct Coordinate {
     pub col: usize,
 }
 
+type Dimension = Coordinate;
+
 #[wasm_bindgen]
 #[derive(PartialEq, Eq)]
 /**
@@ -65,12 +67,17 @@ pub struct Snake {
 }
 
 impl Snake {
-    fn new(spawn_row: usize, spawn_col: usize) -> Snake {
+    fn new(spawn_coord: Coordinate, length: usize, world_dimension: Dimension) -> Snake {
+        let mut body = vec![];
+
+        for i in 0..length {
+            body.push(Coordinate {
+                row: spawn_coord.row,
+                col: (world_dimension.col + spawn_coord.col - i) % world_dimension.col, // avoid overflow
+            })
+        }
         Snake {
-            body: vec![Coordinate {
-                row: spawn_row,
-                col: spawn_col,
-            }],
+            body,
             direction: Direction::Right,
         }
     }
@@ -78,18 +85,17 @@ impl Snake {
 
 #[wasm_bindgen]
 pub struct World {
-    num_rows: usize,
-    num_cols: usize,
+    dimension: Dimension,
     snake: Snake,
 }
 
 #[wasm_bindgen]
 impl World {
     pub fn new() -> World {
+        let dimension: Dimension = Dimension { row: 8, col: 8 };
         World {
-            num_rows: 8,
-            num_cols: 8,
-            snake: Snake::new(1, 2),
+            dimension,
+            snake: Snake::new(Coordinate { row: 1, col: 2 }, 3, dimension),
         }
     }
 
@@ -99,19 +105,29 @@ impl World {
         snake_row: usize,
         snake_col: usize,
     ) -> World {
+        let dimension: Dimension = Dimension {
+            row: world_num_rows,
+            col: world_num_cols,
+        };
         World {
-            num_rows: world_num_rows,
-            num_cols: world_num_cols,
-            snake: Snake::new(snake_row, snake_col),
+            dimension,
+            snake: Snake::new(
+                Coordinate {
+                    row: snake_row,
+                    col: snake_col,
+                },
+                3,
+                dimension,
+            ),
         }
     }
 
     pub fn get_num_rows(&self) -> usize {
-        self.num_rows
+        self.dimension.row
     }
 
     pub fn get_num_cols(&self) -> usize {
-        self.num_cols
+        self.dimension.col
     }
 
     pub fn get_snake_head_coord(&self) -> Coordinate {
@@ -125,16 +141,36 @@ impl World {
     pub fn update(&mut self) {
         let Coordinate { row, col } = self.get_snake_head_coord();
         self.snake.body[0].row = match self.snake.direction {
-            Direction::Up => (row - 1 + self.num_rows) % self.num_rows, // prevent overflow
-            Direction::Down => (row + 1) % self.num_rows,
+            Direction::Up => (row + self.dimension.row - 1) % self.dimension.row, // prevent overflow
+            Direction::Down => (row + 1) % self.dimension.row,
             Direction::Left => row,
             Direction::Right => row,
         };
         self.snake.body[0].col = match self.snake.direction {
             Direction::Up => col,
             Direction::Down => col,
-            Direction::Left => (col - 1 + self.num_cols) % self.num_cols, // prevent overflow
-            Direction::Right => (col + 1) % self.num_cols,
+            Direction::Left => (col + self.dimension.col - 1) % self.dimension.col, // prevent overflow
+            Direction::Right => (col + 1) % self.dimension.col,
         };
+    }
+
+    // cannot return a reference to JS because of borrowing rules
+    // cannot return a borrowed ref with #[wasm_bindgen]
+    // Rust code have no control of underlying memory data
+    // pub fn get_snake_cells(&mut self) -> &Coordinate {
+    //     &self.snake.body
+    // }
+
+    /**
+     * `*const` is a raw pointer, Rust borrowing rules doesn't apply to it
+     * You're telling rust compiler you'd like to access point anyways because you're in control of the code
+     */
+    pub fn get_snake_cells(&self) -> *const Coordinate {
+        self.snake.body.as_ptr() // hack: go around rust's borrowing rules
+        // points to first item of snake.body
+    }
+
+    pub fn snake_length(&self) -> usize {
+        self.snake.body.len()
     }
 }

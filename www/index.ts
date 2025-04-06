@@ -112,8 +112,15 @@ async function init_main() {
   const context = canvas.getContext("2d");
   // console.log(world.num_rows); // will print `undefined` since `num_rows` is a private field
 
+  const snakeCellPtr = world.get_snake_cells(); // e.g. 1179632 a `Number` type
+  const snakeLength = world.snake_length();
+  const snakeCells = new Uint32Array( // access WASM memory in JS directly
+    wasm.memory.buffer, // `wasm` is returned by init, type `InitInput` or `InitOutput`
+    snakeCellPtr, // ptr returned by Rust
+    snakeLength * 2 // each snake cell occupies 2 bytes: (row, col)
+  ); // extract `snakeLength` bytes from memory buffer at the address of `snakeCellPtr`
+
   document.addEventListener("keydown", (e) => {
-    console.log(e.code);
     switch (e.code) {
       case "ArrowLeft":
         world.change_snake_dir(Direction.Left);
