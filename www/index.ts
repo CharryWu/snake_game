@@ -1,4 +1,4 @@
-import init, { Direction, World } from "snake_game";
+import init, { Direction, InitOutput, World } from "snake_game";
 const CELL_SIZE = 10;
 const WORLD_ROWS = 24; // # of rows
 const WORLD_COLS = 12; // # of columns
@@ -16,6 +16,7 @@ interface DrawingFnParams {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
   world: World;
+  wasm?: InitOutput;
 }
 /**
  * Draws the game world on a canvas element by setting its dimensions
@@ -53,6 +54,34 @@ function drawWorld({ canvas, context, world }: DrawingFnParams) {
   context.stroke();
 }
 
+function drawCell({
+  context,
+  row,
+  col,
+}: {
+  context: CanvasRenderingContext2D;
+  row: number;
+  col: number;
+}) {
+  context.beginPath();
+  context.fillRect(CELL_SIZE * col, CELL_SIZE * row, CELL_SIZE, CELL_SIZE);
+  context.stroke();
+}
+
+function drawCells({
+  context,
+  cells,
+}: {
+  context: CanvasRenderingContext2D;
+  cells: [number, number][];
+}) {
+  context.beginPath();
+  for (const [row, col] of cells) {
+    context.fillRect(CELL_SIZE * col, CELL_SIZE * row, CELL_SIZE, CELL_SIZE);
+  }
+  context.stroke();
+}
+
 /**
  * Draws the snake's head on the canvas.
  *
@@ -64,16 +93,22 @@ function drawWorld({ canvas, context, world }: DrawingFnParams) {
  * @param {DrawingFnParams} params - The parameters required for drawing,
  * including the canvas element, its rendering context, and the world object.
  */
-function drawSnake({ canvas, context, world }: DrawingFnParams) {
-  const { row: snake_head_row, col: snake_head_col } =
-    world.get_snake_head_coord();
-  context.beginPath();
-  context.fillRect(
-    CELL_SIZE * snake_head_col,
-    CELL_SIZE * snake_head_row,
-    CELL_SIZE,
-    CELL_SIZE
-  );
+function drawSnake({ wasm, context, world }: DrawingFnParams) {
+  const snakeCellPtr = world.get_snake_cells(); // e.g. 1179632 a `Number` type
+  const snakeLength = world.snake_length();
+  const snakeCellsRaw = new Uint32Array( // access WASM memory in JS directly
+    wasm.memory.buffer, // `wasm` is returned by init, type `InitInput` or `InitOutput`
+    snakeCellPtr, // ptr returned by Rust
+    snakeLength * 2 // each snake cell occupies 2 bytes: (row, col)
+  ); // extract `snakeLength` bytes from memory buffer at the address of `snakeCellPtr`
+
+  for (let i = 0; i < snakeLength; i++) {
+    context.fillStyle = i == 0 ? "#344e41" : "#a3b18a"; // head: dark tone, body: light tone
+    context.beginPath();
+    const row = snakeCellsRaw[i * 2];
+    const col = snakeCellsRaw[i * 2 + 1];
+    context.fillRect(CELL_SIZE * col, CELL_SIZE * row, CELL_SIZE, CELL_SIZE);
+  }
   context.stroke();
 }
 
@@ -86,10 +121,10 @@ function drawSnake({ canvas, context, world }: DrawingFnParams) {
  * @param {DrawingFnParams} params - The parameters containing the canvas,
  * context, and world to be drawn.
  */
-function paint({ canvas, context, world }: DrawingFnParams) {
+function paint({ canvas, context, world, wasm }: DrawingFnParams) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawWorld({ canvas, context, world });
-  drawSnake({ canvas, context, world });
+  drawSnake({ canvas, context, world, wasm });
 }
 
 /**
@@ -112,14 +147,6 @@ async function init_main() {
   const context = canvas.getContext("2d");
   // console.log(world.num_rows); // will print `undefined` since `num_rows` is a private field
 
-  const snakeCellPtr = world.get_snake_cells(); // e.g. 1179632 a `Number` type
-  const snakeLength = world.snake_length();
-  const snakeCells = new Uint32Array( // access WASM memory in JS directly
-    wasm.memory.buffer, // `wasm` is returned by init, type `InitInput` or `InitOutput`
-    snakeCellPtr, // ptr returned by Rust
-    snakeLength * 2 // each snake cell occupies 2 bytes: (row, col)
-  ); // extract `snakeLength` bytes from memory buffer at the address of `snakeCellPtr`
-
   document.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "ArrowLeft":
@@ -140,14 +167,14 @@ async function init_main() {
   function update() {
     const FPS = 4;
     window.setTimeout(() => {
-      world.update();
-      paint({ canvas, context, world });
+      world.step();
+      paint({ canvas, context, world, wasm });
       // method takes callback to invoked before next browser repaint
       window.requestAnimationFrame(update);
     }, 1000 / FPS);
   }
 
-  paint({ canvas, world, context });
+  paint({ canvas, world, context, wasm });
   update();
 }
 

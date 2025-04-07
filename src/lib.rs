@@ -44,7 +44,7 @@ pub struct Coordinate {
 type Dimension = Coordinate;
 
 #[wasm_bindgen]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 /**
  * PartialEq equality must be (for all a, b and c):
  * - symmetric: a == b implies b == a; and
@@ -134,24 +134,41 @@ impl World {
         self.snake.body[0]
     }
 
+    fn get_next_snake_cell(&self, cell: Coordinate, direction: Direction) -> Coordinate {
+        match direction {
+            Direction::Left => Coordinate {
+                row: cell.row,
+                col: (cell.col + self.dimension.col - 1) % self.dimension.col,
+            },
+            Direction::Right => Coordinate {
+                row: cell.row,
+                col: (cell.col + self.dimension.col + 1) % self.dimension.col,
+            },
+            Direction::Up => Coordinate {
+                row: (cell.row + self.dimension.row - 1) % self.dimension.row,
+                col: cell.col,
+            },
+            Direction::Down => Coordinate {
+                row: (cell.row + self.dimension.row + 1) % self.dimension.row,
+                col: cell.col,
+            },
+        }
+    }
+
     pub fn change_snake_dir(&mut self, direction: Direction) {
         self.snake.direction = direction;
     }
 
-    pub fn update(&mut self) {
-        let Coordinate { row, col } = self.get_snake_head_coord();
-        self.snake.body[0].row = match self.snake.direction {
-            Direction::Up => (row + self.dimension.row - 1) % self.dimension.row, // prevent overflow
-            Direction::Down => (row + 1) % self.dimension.row,
-            Direction::Left => row,
-            Direction::Right => row,
-        };
-        self.snake.body[0].col = match self.snake.direction {
-            Direction::Up => col,
-            Direction::Down => col,
-            Direction::Left => (col + self.dimension.col - 1) % self.dimension.col, // prevent overflow
-            Direction::Right => (col + 1) % self.dimension.col,
-        };
+    /**
+     * Go over snake body, assign each cell coord to its next cell except
+     * head which will move to a new cell according to `snake.direction`
+     */
+    pub fn step(&mut self) {
+        let snake_head = self.get_snake_head_coord();
+        for i in (1..self.snake.body.len()).rev() {
+            self.snake.body[i] = self.snake.body[i - 1];
+        }
+        self.snake.body[0] = self.get_next_snake_cell(snake_head, self.snake.direction);
     }
 
     // cannot return a reference to JS because of borrowing rules
