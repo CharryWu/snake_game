@@ -95,6 +95,7 @@ pub struct World {
     dimension: Dimension,
     snake: Snake,
     reward_cell: Coordinate,
+    pub win: bool,
 }
 
 #[wasm_bindgen]
@@ -108,6 +109,7 @@ impl World {
             dimension,
             snake, // var `snake` is moved into World constructor
             reward_cell,
+            win: false,
         }
     }
 
@@ -135,6 +137,7 @@ impl World {
             dimension,
             snake, // var `snake` is moved into World constructor
             reward_cell,
+            win: false,
         }
     }
 
@@ -202,6 +205,9 @@ impl World {
      * head which will move to a new cell according to `snake.direction`
      */
     pub fn step(&mut self) {
+        if self.win {
+            return;
+        }
         let snake_head = self.get_snake_head_coord();
         for i in (1..self.snake.body.len()).rev() {
             self.snake.body[i] = self.snake.body[i - 1];
@@ -217,7 +223,12 @@ impl World {
             // The newly pushed cell position is irrelevant as it will be overwritten
             // in next `step` update, value will be reassigned by second last cell
             // log(&format!("after push snake.body={:?}", self.snake.body));
-            self.reward_cell = Self::gen_reward_cell(self.dimension, &self.snake.body);
+            if self.snake_length() < self.dimension.row * self.dimension.col {
+                self.reward_cell = Self::gen_reward_cell(self.dimension, &self.snake.body);
+            } else {
+                // winning condition
+                self.win = true;
+            }
         }
     }
 

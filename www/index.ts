@@ -1,7 +1,7 @@
 import init, { Direction, InitOutput, World } from "snake_game";
 const CELL_SIZE = 10;
-const WORLD_ROWS = 24; // # of rows
-const WORLD_COLS = 24; // # of columns
+const WORLD_ROWS = 4; // # of rows
+const WORLD_COLS = 4; // # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
 
@@ -102,7 +102,7 @@ function drawSnake({ wasm, context, world }: DrawingFnParams) {
     snakeLength * 2 // each snake cell occupies 2 bytes: (row, col)
   ); // extract `snakeLength` bytes from memory buffer at the address of `snakeCellPtr`
 
-  for (let i = 0; i < snakeLength; i++) {
+  for (let i = snakeLength - 1; i >= 0; i--) {
     context.fillStyle = i == 0 ? "#344e41" : "#a3b18a"; // head: dark tone, body: light tone
     context.beginPath();
     const row = snakeCellsRaw[i * 2];
@@ -177,6 +177,10 @@ async function init_main() {
     const FPS = 4;
     window.setTimeout(() => {
       world.step();
+      if (world.win) {
+        console.log("You win!");
+        return;
+      }
       paint({ canvas, context, world, wasm });
       // method takes callback to invoked before next browser repaint
       window.requestAnimationFrame(update);
