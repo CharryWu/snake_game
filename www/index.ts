@@ -1,7 +1,7 @@
 import init, { Direction, InitOutput, World } from "snake_game";
 const CELL_SIZE = 10;
 const WORLD_ROWS = 24; // # of rows
-const WORLD_COLS = 12; // # of columns
+const WORLD_COLS = 24; // # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
 

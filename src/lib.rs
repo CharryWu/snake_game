@@ -102,20 +102,11 @@ impl World {
     pub fn new() -> World {
         let dimension: Dimension = Dimension { row: 8, col: 8 };
         let snake = Snake::new(Coordinate { row: 1, col: 2 }, SPAWN_SNAKE_LEN, dimension);
-        let mut reward_cell: Coordinate;
-        loop {
-            reward_cell = Coordinate {
-                row: getRandomInRange(0, dimension.row),
-                col: getRandomInRange(0, dimension.col),
-            };
-
-            if !snake.body.contains(&reward_cell) {
-                break;
-            }
-        }
+        let reward_cell = Self::gen_reward_cell(dimension, &snake.body); // Self refers to World
+        // local var `snake` is not borrowed, so it can be used again
         World {
             dimension,
-            snake,
+            snake, // var `snake` is moved into World constructor
             reward_cell,
         }
     }
@@ -138,22 +129,27 @@ impl World {
             SPAWN_SNAKE_LEN,
             dimension,
         );
+        let reward_cell = Self::gen_reward_cell(dimension, &snake.body); // Self refers to World
+        // local var `snake` is not borrowed, so it can be used again
+        World {
+            dimension,
+            snake, // var `snake` is moved into World constructor
+            reward_cell,
+        }
+    }
+
+    fn gen_reward_cell(world_dimension: Dimension, snake_body: &Vec<Coordinate>) -> Coordinate {
         let mut reward_cell: Coordinate;
         loop {
             reward_cell = Coordinate {
-                row: getRandomInRange(0, dimension.row),
-                col: getRandomInRange(0, dimension.col),
+                row: getRandomInRange(0, world_dimension.row),
+                col: getRandomInRange(0, world_dimension.col),
             };
-
-            if !snake.body.contains(&reward_cell) {
-                break;
+            if !snake_body.contains(&reward_cell) {
+                break; // loop until reward cell is not inside snake body
             }
         }
-        World {
-            dimension,
-            snake,
-            reward_cell,
-        }
+        reward_cell
     }
 
     pub fn get_num_rows(&self) -> usize {
@@ -221,16 +217,7 @@ impl World {
             // The newly pushed cell position is irrelevant as it will be overwritten
             // in next `step` update, value will be reassigned by second last cell
             // log(&format!("after push snake.body={:?}", self.snake.body));
-            loop {
-                // generate next reward cell outside of snake body
-                self.reward_cell = Coordinate {
-                    row: getRandomInRange(0, self.dimension.row),
-                    col: getRandomInRange(0, self.dimension.col),
-                };
-                if !self.snake.body.contains(&self.reward_cell) {
-                    break;
-                }
-            }
+            self.reward_cell = Self::gen_reward_cell(self.dimension, &self.snake.body);
         }
     }
 
