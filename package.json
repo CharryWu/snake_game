@@ -1,0 +1,9 @@
+{
+  "name": "snake_game",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {},
+  "scripts": {
+    "start": "cd www && npm run build:wasm && npm run start; cd -"
+  }
+}

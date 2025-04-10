@@ -211,6 +211,27 @@ impl World {
             self.snake.body[i] = self.snake.body[i - 1];
         }
         self.snake.body[0] = self.get_next_snake_cell(snake_head, self.snake.direction);
+        // snake eats reward
+        if self.snake.body[0] == self.reward_cell {
+            // push `snake_head` which is previous pos of snake head
+            // instead of `reward_cell` which is current index of snake head
+            // to ensure in next `step` update, body cell does not occupy head position
+            // log(&format!("before push snake.body={:?}", self.snake.body));
+            self.snake.body.push(snake_head); // grow snake by 1 more cell.
+            // The newly pushed cell position is irrelevant as it will be overwritten
+            // in next `step` update, value will be reassigned by second last cell
+            // log(&format!("after push snake.body={:?}", self.snake.body));
+            loop {
+                // generate next reward cell outside of snake body
+                self.reward_cell = Coordinate {
+                    row: getRandomInRange(0, self.dimension.row),
+                    col: getRandomInRange(0, self.dimension.col),
+                };
+                if !self.snake.body.contains(&self.reward_cell) {
+                    break;
+                }
+            }
+        }
     }
 
     // cannot return a reference to JS because of borrowing rules
