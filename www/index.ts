@@ -13,7 +13,7 @@ const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
  * @property {World} world - The game world instance containing the state and logic for the drawing.
  */
 interface DrawingFnParams {
-  canvas: HTMLCanvasElement;
+  canvas?: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
   world: World;
   wasm?: InitOutput;
@@ -112,6 +112,14 @@ function drawSnake({ wasm, context, world }: DrawingFnParams) {
   context.stroke();
 }
 
+function drawRewardCell({ context, world }: DrawingFnParams) {
+  const { row, col } = world.get_reward_cell();
+  context.fillStyle = "#f5b700";
+  context.beginPath();
+  context.fillRect(CELL_SIZE * col, CELL_SIZE * row, CELL_SIZE, CELL_SIZE);
+  context.stroke();
+}
+
 /**
  * Paints the current state of the world and the snake onto the canvas.
  *
@@ -124,6 +132,7 @@ function drawSnake({ wasm, context, world }: DrawingFnParams) {
 function paint({ canvas, context, world, wasm }: DrawingFnParams) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   drawWorld({ canvas, context, world });
+  drawRewardCell({ canvas, context, world, wasm });
   drawSnake({ canvas, context, world, wasm });
 }
 

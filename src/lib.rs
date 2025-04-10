@@ -4,10 +4,17 @@ use wee_alloc::WeeAlloc;
 // Use `wee_alloc` as the global allocator. Reduces compiled .wasm size by 3KB
 #[global_allocator]
 static ALLOC: WeeAlloc = WeeAlloc::INIT;
+// Default size of newly spawned snake in new world
+static SPAWN_SNAKE_LEN: usize = 3;
 
 #[wasm_bindgen] // import externally defined JS functions into current module
 extern "C" {
     pub fn alert(s: &str); // window.alert
+}
+
+#[wasm_bindgen(module = "/www/utils/random.js")]
+extern "C" {
+    fn getRandomInRange(min: usize, max: usize) -> usize;
 }
 
 // First up let's take a look of binding `console.log` manually, without the
@@ -43,14 +50,14 @@ pub struct Coordinate {
 
 type Dimension = Coordinate;
 
-#[wasm_bindgen]
-#[derive(PartialEq, Eq, Copy, Clone)]
 /**
  * PartialEq equality must be (for all a, b and c):
  * - symmetric: a == b implies b == a; and
  * - transitive: a == b and b == c implies a == c.
  * **Trait Eq inherits trait PartialEq. All it does is refine the contract. a == a : valild assuming type A implements Eq**
  */
+#[wasm_bindgen]
+#[derive(PartialEq, Eq, Copy, Clone)]
 pub enum Direction {
     Up,
     Down,
@@ -87,15 +94,29 @@ impl Snake {
 pub struct World {
     dimension: Dimension,
     snake: Snake,
+    reward_cell: Coordinate,
 }
 
 #[wasm_bindgen]
 impl World {
     pub fn new() -> World {
         let dimension: Dimension = Dimension { row: 8, col: 8 };
+        let snake = Snake::new(Coordinate { row: 1, col: 2 }, SPAWN_SNAKE_LEN, dimension);
+        let mut reward_cell: Coordinate;
+        loop {
+            reward_cell = Coordinate {
+                row: getRandomInRange(0, dimension.row),
+                col: getRandomInRange(0, dimension.col),
+            };
+
+            if !snake.body.contains(&reward_cell) {
+                break;
+            }
+        }
         World {
             dimension,
-            snake: Snake::new(Coordinate { row: 1, col: 2 }, 3, dimension),
+            snake,
+            reward_cell,
         }
     }
 
@@ -109,16 +130,29 @@ impl World {
             row: world_num_rows,
             col: world_num_cols,
         };
+        let snake = Snake::new(
+            Coordinate {
+                row: snake_row,
+                col: snake_col,
+            },
+            SPAWN_SNAKE_LEN,
+            dimension,
+        );
+        let mut reward_cell: Coordinate;
+        loop {
+            reward_cell = Coordinate {
+                row: getRandomInRange(0, dimension.row),
+                col: getRandomInRange(0, dimension.col),
+            };
+
+            if !snake.body.contains(&reward_cell) {
+                break;
+            }
+        }
         World {
             dimension,
-            snake: Snake::new(
-                Coordinate {
-                    row: snake_row,
-                    col: snake_col,
-                },
-                3,
-                dimension,
-            ),
+            snake,
+            reward_cell,
         }
     }
 
@@ -132,6 +166,10 @@ impl World {
 
     pub fn get_snake_head_coord(&self) -> Coordinate {
         self.snake.body[0]
+    }
+
+    pub fn get_reward_cell(&self) -> Coordinate {
+        self.reward_cell
     }
 
     fn get_next_snake_cell(&self, cell: Coordinate, direction: Direction) -> Coordinate {
@@ -156,6 +194,10 @@ impl World {
     }
 
     pub fn change_snake_dir(&mut self, direction: Direction) {
+        let next_cell = self.get_next_snake_cell(self.get_snake_head_coord(), direction);
+        if next_cell == self.snake.body[1] {
+            return; // 180 degree turn is not allowed
+        }
         self.snake.direction = direction;
     }
 
