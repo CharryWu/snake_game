@@ -9,3 +9,13 @@
   justify-content: center;
   flex-direction: column;
 }
+.game-panel {
+  margin-bottom: 20px;
+}
+.flex {
+  display: flex;
+}
+.label {
+  font-weight: bold;
+  margin-right: 10px;
+}

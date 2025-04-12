@@ -41,6 +41,14 @@ extern "C" {
 }
 
 #[wasm_bindgen]
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum GameStatus {
+    Won,    // stop moving
+    Lost,   // stop moving
+    Played, // moving
+}
+
+#[wasm_bindgen]
 // See https://doc.rust-lang.org/std/marker/trait.Copy.html#whats-the-difference-between-copy-and-clone
 #[derive(Copy, Clone, Debug, PartialEq, Eq)] // A type can implement Copy if all of its components implement Copy.
 pub struct Coordinate {
@@ -95,7 +103,7 @@ pub struct World {
     dimension: Dimension,
     snake: Snake,
     reward_cell: Coordinate,
-    pub win: bool,
+    pub status: Option<GameStatus>,
 }
 
 #[wasm_bindgen]
@@ -109,7 +117,7 @@ impl World {
             dimension,
             snake, // var `snake` is moved into World constructor
             reward_cell,
-            win: false,
+            status: None,
         }
     }
 
@@ -137,22 +145,12 @@ impl World {
             dimension,
             snake, // var `snake` is moved into World constructor
             reward_cell,
-            win: false,
+            status: None,
         }
     }
 
-    fn gen_reward_cell(world_dimension: Dimension, snake_body: &Vec<Coordinate>) -> Coordinate {
-        let mut reward_cell: Coordinate;
-        loop {
-            reward_cell = Coordinate {
-                row: getRandomInRange(0, world_dimension.row),
-                col: getRandomInRange(0, world_dimension.col),
-            };
-            if !snake_body.contains(&reward_cell) {
-                break; // loop until reward cell is not inside snake body
-            }
-        }
-        reward_cell
+    pub fn start_game(&mut self) {
+        self.status = Some(GameStatus::Played);
     }
 
     pub fn get_num_rows(&self) -> usize {
@@ -171,27 +169,6 @@ impl World {
         self.reward_cell
     }
 
-    fn get_next_snake_cell(&self, cell: Coordinate, direction: Direction) -> Coordinate {
-        match direction {
-            Direction::Left => Coordinate {
-                row: cell.row,
-                col: (cell.col + self.dimension.col - 1) % self.dimension.col,
-            },
-            Direction::Right => Coordinate {
-                row: cell.row,
-                col: (cell.col + self.dimension.col + 1) % self.dimension.col,
-            },
-            Direction::Up => Coordinate {
-                row: (cell.row + self.dimension.row - 1) % self.dimension.row,
-                col: cell.col,
-            },
-            Direction::Down => Coordinate {
-                row: (cell.row + self.dimension.row + 1) % self.dimension.row,
-                col: cell.col,
-            },
-        }
-    }
-
     pub fn change_snake_dir(&mut self, direction: Direction) {
         let next_cell = self.get_next_snake_cell(self.get_snake_head_coord(), direction);
         if next_cell == self.snake.body[1] {
@@ -205,29 +182,39 @@ impl World {
      * head which will move to a new cell according to `snake.direction`
      */
     pub fn step(&mut self) {
-        if self.win {
-            return;
-        }
-        let snake_head = self.get_snake_head_coord();
-        for i in (1..self.snake.body.len()).rev() {
-            self.snake.body[i] = self.snake.body[i - 1];
-        }
-        self.snake.body[0] = self.get_next_snake_cell(snake_head, self.snake.direction);
-        // snake eats reward
-        if self.snake.body[0] == self.reward_cell {
-            // push `snake_head` which is previous pos of snake head
-            // instead of `reward_cell` which is current index of snake head
-            // to ensure in next `step` update, body cell does not occupy head position
-            // log(&format!("before push snake.body={:?}", self.snake.body));
-            self.snake.body.push(snake_head); // grow snake by 1 more cell.
-            // The newly pushed cell position is irrelevant as it will be overwritten
-            // in next `step` update, value will be reassigned by second last cell
-            // log(&format!("after push snake.body={:?}", self.snake.body));
-            if self.snake_length() < self.dimension.row * self.dimension.col {
-                self.reward_cell = Self::gen_reward_cell(self.dimension, &self.snake.body);
-            } else {
-                // winning condition
-                self.win = true;
+        match self.status {
+            Some(GameStatus::Won) => {
+                return;
+            }
+            Some(GameStatus::Lost) => {
+                return;
+            }
+            Some(GameStatus::Played) => {
+                let snake_head = self.get_snake_head_coord();
+                for i in (1..self.snake.body.len()).rev() {
+                    self.snake.body[i] = self.snake.body[i - 1];
+                }
+                self.snake.body[0] = self.get_next_snake_cell(snake_head, self.snake.direction);
+                // snake eats reward
+                if self.snake.body[0] == self.reward_cell {
+                    // push `snake_head` which is previous pos of snake head
+                    // instead of `reward_cell` which is current index of snake head
+                    // to ensure in next `step` update, body cell does not occupy head position
+                    // log(&format!("before push snake.body={:?}", self.snake.body));
+                    self.snake.body.push(snake_head); // grow snake by 1 more cell.
+                    // The newly pushed cell position is irrelevant as it will be overwritten
+                    // in next `step` update, value will be reassigned by second last cell
+                    // log(&format!("after push snake.body={:?}", self.snake.body));
+                    if self.snake_length() < self.dimension.row * self.dimension.col {
+                        self.reward_cell = Self::gen_reward_cell(self.dimension, &self.snake.body);
+                    } else {
+                        // winning condition
+                        self.status = Some(GameStatus::Won);
+                    }
+                }
+            }
+            None => {
+                return;
             }
         }
     }
@@ -250,5 +237,40 @@ impl World {
 
     pub fn snake_length(&self) -> usize {
         self.snake.body.len()
+    }
+
+    fn gen_reward_cell(world_dimension: Dimension, snake_body: &Vec<Coordinate>) -> Coordinate {
+        let mut reward_cell: Coordinate;
+        loop {
+            reward_cell = Coordinate {
+                row: getRandomInRange(0, world_dimension.row),
+                col: getRandomInRange(0, world_dimension.col),
+            };
+            if !snake_body.contains(&reward_cell) {
+                break; // loop until reward cell is not inside snake body
+            }
+        }
+        reward_cell
+    }
+
+    fn get_next_snake_cell(&self, cell: Coordinate, direction: Direction) -> Coordinate {
+        match direction {
+            Direction::Left => Coordinate {
+                row: cell.row,
+                col: (cell.col + self.dimension.col - 1) % self.dimension.col,
+            },
+            Direction::Right => Coordinate {
+                row: cell.row,
+                col: (cell.col + self.dimension.col + 1) % self.dimension.col,
+            },
+            Direction::Up => Coordinate {
+                row: (cell.row + self.dimension.row - 1) % self.dimension.row,
+                col: cell.col,
+            },
+            Direction::Down => Coordinate {
+                row: (cell.row + self.dimension.row + 1) % self.dimension.row,
+                col: cell.col,
+            },
+        }
     }
 }

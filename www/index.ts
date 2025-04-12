@@ -1,9 +1,11 @@
-import init, { Direction, InitOutput, World } from "snake_game";
+import init, { Direction, InitOutput, World, GameStatus } from "snake_game";
 const CELL_SIZE = 10;
-const WORLD_ROWS = 4; // # of rows
-const WORLD_COLS = 4; // # of columns
+const WORLD_ROWS = 24; // # of rows
+const WORLD_COLS = 24; // # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
+
+const $$ = document.querySelector.bind(document);
 
 /**
  * Represents the parameters required for a drawing function.
@@ -146,7 +148,7 @@ function paint({ canvas, context, world, wasm }: DrawingFnParams) {
  */
 async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
-  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+  const canvas = $$("#canvas") as HTMLCanvasElement;
   const world = World.from(
     WORLD_ROWS,
     WORLD_COLS,
@@ -173,22 +175,28 @@ async function init_main() {
     }
   });
 
-  function update() {
+  function play() {
     const FPS = 4;
     window.setTimeout(() => {
       world.step();
-      if (world.win) {
+      if (world.status === GameStatus.Won) {
         console.log("You win!");
         return;
       }
       paint({ canvas, context, world, wasm });
       // method takes callback to invoked before next browser repaint
-      window.requestAnimationFrame(update);
+      window.requestAnimationFrame(play);
     }, 1000 / FPS);
   }
 
+  $$("#game-control-btn")?.addEventListener("click", (_: MouseEvent) => {
+    if (!world.status) {
+      world.start_game();
+      play();
+    }
+  });
+
   paint({ canvas, world, context, wasm });
-  update();
 }
 
 init_main();
