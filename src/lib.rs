@@ -113,6 +113,7 @@ pub struct World {
     snake: Snake,
     reward_cell: Coordinate,
     pub status: Option<GameStatus>,
+    pub points: usize,
 }
 
 #[wasm_bindgen]
@@ -131,6 +132,7 @@ impl World {
             snake, // var `snake` is moved into World constructor
             reward_cell,
             status: None,
+            points: 0,
         }
     }
 
@@ -169,6 +171,7 @@ impl World {
             snake, // var `snake` is moved into World constructor
             reward_cell,
             status: None,
+            points: 0,
         }
     }
 
@@ -263,9 +266,10 @@ impl World {
                     // in next `step` update, value will be reassigned by second last cell
                     // log(&format!("after push snake.body={:?}", self.snake.body));
                     if self.snake_length() < self.dimension.row * self.dimension.col {
+                        self.points += 1;
                         self.reward_cell = Self::gen_reward_cell(self.dimension, &self.snake.body);
                     } else {
-                        // winning condition
+                        // winning condition: snake length = world size
                         self.status = Some(GameStatus::Won);
                     }
                 }
