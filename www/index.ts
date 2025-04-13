@@ -1,11 +1,12 @@
 import init, { Direction, InitOutput, World, GameStatus } from "snake_game";
 const CELL_SIZE = 10;
-const WORLD_ROWS = 24; // # of rows
-const WORLD_COLS = 24; // # of columns
+const WORLD_ROWS = 4; // # of rows
+const WORLD_COLS = 4; // # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
 
-const $$ = document.querySelector.bind(document);
+const q: <E extends Element = Element>(selectors: string) => E | null =
+  document.querySelector.bind(document);
 
 /**
  * Represents the parameters required for a drawing function.
@@ -20,6 +21,20 @@ interface DrawingFnParams {
   world: World;
   wasm?: InitOutput;
 }
+
+const statusToText = (status: GameStatus) => {
+  switch (status) {
+    case GameStatus.Won:
+      return "You have won! 🎉";
+    case GameStatus.Lost:
+      return "You have lost! 😢";
+    case GameStatus.Played:
+      return "Playing...";
+    default:
+      return "Game not started";
+  }
+};
+
 /**
  * Draws the game world on a canvas element by setting its dimensions
  * based on the world's width and height, and drawing grid lines.
@@ -136,6 +151,7 @@ function paint({ canvas, context, world, wasm }: DrawingFnParams) {
   drawWorld({ canvas, context, world });
   drawRewardCell({ canvas, context, world, wasm });
   drawSnake({ canvas, context, world, wasm });
+  q("#game-status").textContent = statusToText(world.status);
 }
 
 /**
@@ -148,8 +164,8 @@ function paint({ canvas, context, world, wasm }: DrawingFnParams) {
  */
 async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
-  const canvas = $$("#canvas") as HTMLCanvasElement;
-  const world = World.from(
+  const canvas = q("#canvas") as HTMLCanvasElement;
+  let world = World.from(
     WORLD_ROWS,
     WORLD_COLS,
     SNAKE_SPAWN_ROW,
@@ -175,26 +191,51 @@ async function init_main() {
     }
   });
 
+  let timeout: number;
+  let raf: number;
+
   function play() {
     const FPS = 4;
-    window.setTimeout(() => {
+    timeout = window.setTimeout(() => {
       world.step();
       if (world.status === GameStatus.Won) {
-        console.log("You win!");
+        q("#game-status").textContent = statusToText(GameStatus.Won);
+        q("#game-control-btn").textContent = "Reset";
         return;
       }
       paint({ canvas, context, world, wasm });
       // method takes callback to invoked before next browser repaint
-      window.requestAnimationFrame(play);
+      raf = window.requestAnimationFrame(play);
     }, 1000 / FPS);
   }
 
-  $$("#game-control-btn")?.addEventListener("click", (_: MouseEvent) => {
-    if (!world.status) {
-      world.start_game();
-      play();
+  q("#game-control-btn")?.addEventListener("click", (_: MouseEvent) => {
+    switch (world.status) {
+      case GameStatus.Played:
+      case GameStatus.Won:
+        context.reset();
+        window.cancelAnimationFrame(raf);
+        window.clearTimeout(timeout);
+        q("#game-status").textContent = statusToText(null);
+        world = World.from(
+          WORLD_ROWS,
+          WORLD_COLS,
+          SNAKE_SPAWN_ROW,
+          SNAKE_SPAWN_COL
+        ); // reset world
+        q("#game-control-btn").textContent = "Play";
+        paint({ canvas, world, context, wasm });
+        return;
+      default:
+        q("#game-status").textContent = statusToText(GameStatus.Played);
+        q("#game-control-btn").textContent = "Reset";
+        world.start_game();
+        play();
+        return;
     }
   });
+
+  q("#game-status").textContent = statusToText(null);
 
   paint({ canvas, world, context, wasm });
 }
