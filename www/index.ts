@@ -198,10 +198,12 @@ async function init_main() {
     const FPS = 4;
     timeout = window.setTimeout(() => {
       world.step();
-      if (world.status === GameStatus.Won) {
-        q("#game-status").textContent = statusToText(GameStatus.Won);
-        q("#game-control-btn").textContent = "Reset";
-        return;
+      switch (world.status) {
+        case GameStatus.Won:
+        case GameStatus.Lost:
+          q("#game-status").textContent = statusToText(world.status);
+          q("#game-control-btn").textContent = "Reset";
+          return;
       }
       paint({ canvas, context, world, wasm });
       // method takes callback to invoked before next browser repaint
@@ -213,6 +215,7 @@ async function init_main() {
     switch (world.status) {
       case GameStatus.Played:
       case GameStatus.Won:
+      case GameStatus.Lost:
         context.reset();
         window.cancelAnimationFrame(raf);
         window.clearTimeout(timeout);
@@ -226,6 +229,7 @@ async function init_main() {
         q("#game-control-btn").textContent = "Play";
         paint({ canvas, world, context, wasm });
         return;
+
       default:
         q("#game-status").textContent = statusToText(GameStatus.Played);
         q("#game-control-btn").textContent = "Reset";
