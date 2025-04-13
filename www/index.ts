@@ -1,7 +1,7 @@
 import init, { Direction, InitOutput, World, GameStatus } from "snake_game";
 const CELL_SIZE = 10;
-const WORLD_ROWS = 2; // # of rows
-const WORLD_COLS = 2; // # of columns
+const WORLD_ROWS = 4; // # of rows
+const WORLD_COLS = 4; // # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
 
@@ -213,13 +213,13 @@ async function init_main() {
   let raf: number;
 
   function loop_play() {
+    if (world.status === GameStatus.Won || world.status === GameStatus.Lost) {
+      return; // IMPORTANT: exit game loop if win or loss
+    }
     const FPS = 4;
     timeout = window.setTimeout(() => {
       world.step();
       paint({ canvas, context, world, wasm });
-      if (world.status === GameStatus.Won || world.status === GameStatus.Lost) {
-        return; // IMPORTANT: exit game loop if win or loss
-      }
       // method takes callback to invoked before next browser repaint
       raf = window.requestAnimationFrame(loop_play);
     }, 1000 / FPS);
