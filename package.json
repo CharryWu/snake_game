@@ -1,9 +1,25 @@
 {
-  "name": "snake_game",
-  "lockfileVersion": 3,
-  "requires": true,
-  "packages": {},
+  "name": "snake_game_server",
+  "version": "1.0.0",
+  "description": "## Compilation",
+  "main": "index.js",
   "scripts": {
-    "start": "cd www && npm run build:wasm && npm run start; cd -"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CharryWu/snake_game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CharryWu/snake_game/issues"
+  },
+  "homepage": "https://github.com/CharryWu/snake_game#readme",
+  "dependencies": {
+    "compression": "^1.8.0",
+    "express": "^5.1.0"
   }
 }
