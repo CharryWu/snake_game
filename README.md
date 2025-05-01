@@ -31,7 +31,7 @@ snake_game/
 
 ## Compilation
 
-- Make sure wasm-pack is installed by executing cargo install `wasm-pack`
+- Make sure wasm-pack is installed by executing `cargo install wasm-pack`
 - Compile rust code to WASM with `wasm-pack build --target web` at project root
 
 ## Run

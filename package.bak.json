@@ -17,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/CharryWu/snake_game/issues"
   },
-  "homepage": "https://github.com/CharryWu/snake_game#readme"
+  "homepage": "https://github.com/CharryWu/snake_game#readme",
+  "dependencies": {
+    "compression": "^1.8.0",
+    "express": "^5.1.0"
+  }
 }
