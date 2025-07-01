@@ -1,9 +1,15 @@
 import init, { Direction, InitOutput, World, GameStatus } from "snake_game";
-const CELL_SIZE = 10;
-const WORLD_ROWS = 16; // # of rows
-const WORLD_COLS = 16; // # of columns
+
+const CELL_SIZE = 10; // display sidelen of each cell, in pixels
+const WORLD_ROWS = 16; // default # of rows
+const WORLD_COLS = 16; // default # of columns
 const SNAKE_SPAWN_ROW = Date.now() % WORLD_ROWS; // vertical position in grid
 const SNAKE_SPAWN_COL = Date.now() % WORLD_COLS; // horizontal position in grid
+
+let rows = WORLD_ROWS; // # of rows
+let cols = WORLD_COLS; // # of columns
+let snake_spawn_row = SNAKE_SPAWN_ROW; // vertical position in grid
+let snake_spawn_col = SNAKE_SPAWN_COL; // horizontal position in grid
 
 const q: <E extends Element = Element>(selectors: string) => E | null =
   document.querySelector.bind(document);
@@ -11,6 +17,7 @@ const q: <E extends Element = Element>(selectors: string) => E | null =
 const $gameStatus = q("#game-status");
 const $gameControlBtn = q("#game-control-btn");
 const $gamePoints = q("#game-points");
+const $gameWorldSizeSelect = q("#game-world-size-select");
 
 if (!$gameControlBtn || !$gameStatus)
   throw new Error("Can't find HTML element: control button or status field");
@@ -183,12 +190,7 @@ function paint({ canvas, context, world, wasm }: DrawingFnParams) {
 async function init_main() {
   const wasm = await init(); // needs to be called at top of init_main
   const canvas = q("#canvas") as HTMLCanvasElement;
-  let world = World.from(
-    WORLD_ROWS,
-    WORLD_COLS,
-    SNAKE_SPAWN_ROW,
-    SNAKE_SPAWN_COL
-  );
+  let world = World.from(rows, cols, snake_spawn_row, snake_spawn_col);
   const context = canvas.getContext("2d");
   // console.log(world.num_rows); // will print `undefined` since `num_rows` is a private field
 
@@ -229,22 +231,20 @@ async function init_main() {
     switch (world.status) {
       case GameStatus.Played:
       case GameStatus.Won:
-      case GameStatus.Lost:
+      case GameStatus.Lost: // reset mid-game, could also be restart after win/lost
+        ($gameWorldSizeSelect as HTMLSelectElement).disabled = false;
         context.reset();
         window.cancelAnimationFrame(raf);
         window.clearTimeout(timeout);
         $gameStatus.textContent = statusToText(null);
-        world = World.from(
-          WORLD_ROWS,
-          WORLD_COLS,
-          SNAKE_SPAWN_ROW,
-          SNAKE_SPAWN_COL
-        ); // reset world
+        world = World.from(rows, cols, snake_spawn_row, snake_spawn_col); // reset world
         $gameControlBtn.textContent = "Play";
         paint({ canvas, world, context, wasm });
         return;
 
-      default:
+      default: // status defaults to None, player starts game!
+        // disable world size select when game is played
+        ($gameWorldSizeSelect as HTMLSelectElement).disabled = true;
         $gameStatus.textContent = statusToText(GameStatus.Played);
         $gameControlBtn.textContent = "Reset";
         world.start_game();
@@ -254,6 +254,16 @@ async function init_main() {
   });
 
   $gameStatus.textContent = statusToText(null);
+
+  $gameWorldSizeSelect.addEventListener("change", (e: Event) => {
+    const target = e.target as HTMLSelectElement;
+    rows = parseInt(target.value) || WORLD_ROWS;
+    cols = parseInt(target.value) || WORLD_COLS;
+    snake_spawn_row = Date.now() % rows;
+    snake_spawn_col = Date.now() % cols;
+    world = World.from(rows, cols, snake_spawn_row, snake_spawn_col);
+    paint({ canvas, world, context, wasm });
+  });
 
   paint({ canvas, world, context, wasm });
 }

@@ -19,3 +19,7 @@
   font-weight: bold;
   margin-right: 10px;
 }
+.game-world-size-option {
+  font-size: 1.2rem;
+  line-height: 1.2rem;
+}

@@ -49,6 +49,17 @@
       <h1>Snake Game</h1>
       <div class="game-panel">
         <div class="flex">
+          <div class="label">World Size</div>
+          <select id="game-world-size-select">
+            <option class="game-world-size-option" value="8">8x8</option>
+            <option class="game-world-size-option" value="16" selected>
+              16x16
+            </option>
+            <option class="game-world-size-option" value="32">32x32</option>
+            <option class="game-world-size-option" value="64">64x64</option>
+          </select>
+        </div>
+        <div class="flex">
           <div class="label">Status:</div>
           <div id="game-status"></div>
         </div>
